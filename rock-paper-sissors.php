@@ -208,6 +208,15 @@ class Game
         return $player2;
     }
 
+    public function chooseElement(Player $player): int
+    {
+        for ($i = 0; $i < count($this->elements); $i++) {
+            echo "{$i}: {$this->elements[$i]->getName()}\n";
+        }
+
+        return (int)readline("{$player->getName()}, what is your choice?: ");
+    }
+
 }
 
 /*
@@ -305,15 +314,6 @@ class Tournament extends Game
             echo PHP_EOL;
         }
         echo "And the winner is: {$winner->getName()} with totals wins: {$winner->getTotalWins()}\n";
-    }
-
-    public function chooseElement(Player $player): int
-    {
-        for ($i = 0; $i < count($this->elements); $i++) {
-            echo "{$i}: {$this->elements[$i]->getName()}\n";
-        }
-
-        return (int)readline("{$player->getName()}, what is your choice?: ");
     }
 }
 
