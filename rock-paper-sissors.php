@@ -242,7 +242,7 @@ class Tournament extends Game
         $player1->setWins(0);
         $player2->setWins(0);
 
-        echo "{$player1->getName()} VS {$player1->getName()}\n";
+        echo "{$player1->getName()} VS {$player2->getName()}\n";
 
         $c = 1;
         while (($c <= $rounds) || ($player1->getWins() === $player2->getWins())) {
