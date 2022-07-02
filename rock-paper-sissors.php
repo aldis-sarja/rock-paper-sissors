@@ -216,7 +216,6 @@ class Game
 
         return (int)readline("{$player->getName()}, what is your choice?: ");
     }
-
 }
 
 /*
@@ -251,7 +250,7 @@ class Tournament extends Game
         $player1->setWins(0);
         $player2->setWins(0);
 
-        echo "{$player1->getName()} VS {$player2->getName()}\n";
+        echo "~-=={$player1->getName()} VS {$player2->getName()}==-~\n";
 
         $c = 1;
         while (($c <= $rounds) || ($player1->getWins() === $player2->getWins())) {
@@ -261,14 +260,13 @@ class Tournament extends Game
                 $player1->setSelection($this->elements[array_rand($this->elements)]);
             }
 
-            echo "{$player1->getName()} - {$player1->getSelection()->getName()}\n";
-
             if (!$player2->isCPU()) {
                 $player2->setSelection($this->elements[$this->chooseElement($player2)]);
             } else {
                 $player2->setSelection($this->elements[array_rand($this->elements)]);
             }
 
+            echo "{$player1->getName()} - {$player1->getSelection()->getName()}\n";
             echo "{$player2->getName()} - {$player2->getSelection()->getName()}\n";
 
             $winner = $this->fight1on1($player1, $player2);
@@ -285,13 +283,12 @@ class Tournament extends Game
     public function run(): void
     {
         $playersQueue = $this->players;
-        $bigRounds = log(count($playersQueue), 2);
 
-        for ($c = 1; $c <= $bigRounds; $c++) {
+        while (count($playersQueue) > 1) {
             $nextQueue = [];
-            for ($i = 0; $i < count($playersQueue); $i += 2) {
-                $player1 = $playersQueue[$i];
-                $player2 =  $playersQueue[$i + 1];
+            while (count($playersQueue) > 1) {
+                $player1 = array_pop($playersQueue);
+                $player2 =  array_pop($playersQueue);
                 $winner = $this->match($player1, $player2, 3);
 
                 echo "And finally {$winner->getName()} won\n";
@@ -303,6 +300,9 @@ class Tournament extends Game
                     $winner, $winner->getWins(),
                     $looser, $looser->getWins()
                 );
+            }
+            if (current($playersQueue)) {
+                $nextQueue[] = current($playersQueue);
             }
             $playersQueue = $nextQueue;
         }
@@ -356,8 +356,3 @@ class MatchScore
 
 $tournament = new Tournament(8);
 $tournament->run();
-/*
-
-
-
-*/
