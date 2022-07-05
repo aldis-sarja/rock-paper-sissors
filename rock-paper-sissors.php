@@ -239,21 +239,23 @@ class Tournament extends Game
     {
         parent::__construct();
 
-        $this->players[] = new Player(readline("Enter your name: "));
         for ($c = 1; $c <= $numberOfPlayers-1; $c++) {
             $this->players[] = new Player("CPU core-{$c}", true);
         }
+        $this->players[] = new Player(readline("Enter your name: "));
     }
 
-    public function match(Player $player1, Player $player2, int $rounds): Player
+    public function match(Player $player1, Player $player2, int $minWins): Player
     {
         $player1->setWins(0);
         $player2->setWins(0);
 
         echo "~-=={$player1->getName()} VS {$player2->getName()}==-~\n";
 
-        $c = 1;
-        while (($c <= $rounds) || ($player1->getWins() === $player2->getWins())) {
+//        $c = 1;
+//        while (($c <= $rounds) || ($player1->getWins() === $player2->getWins())) {
+        while ((($player1->getWins() < $minWins) && ($player2->getWins() < $minWins))
+            || ($player1->getWins() === $player2->getWins())) {
             if (!$player1->isCPU()) {
                 $player1->setSelection($this->elements[$this->chooseElement($player1)]);
             } else {
@@ -275,7 +277,7 @@ class Tournament extends Game
                 $winner->setTotalWins($winner->getTotalWins() + 1);
                 echo "{$winner->getName()} won\n";
             } else echo "It's tie!\n";
-            $c++;
+//            $c++;
         }
         return $player1->getWins() > $player2->getWins() ? $player1 : $player2;
     }
@@ -289,7 +291,7 @@ class Tournament extends Game
             while (count($playersQueue) > 1) {
                 $player1 = array_pop($playersQueue);
                 $player2 =  array_pop($playersQueue);
-                $winner = $this->match($player1, $player2, 3);
+                $winner = $this->match($player1, $player2, 2);
 
                 echo "And finally {$winner->getName()} won\n";
 
