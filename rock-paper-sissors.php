@@ -52,8 +52,8 @@ class Player
 {
     private string $name;
     private Element $selection;
-    private int $totalWins = 0;
-    private int $wins = 0;
+    //private int $totalWins = 0;
+    //private int $wins = 0;
     private bool $isCPU;
 
     public function __construct(string $name, bool $isCPU = false)
@@ -109,6 +109,7 @@ class Game
      * @var Element[] $elements
      */
     protected array $elements;
+    protected int $elementPadding = 0;
 
     public function __construct()
     {
@@ -125,6 +126,26 @@ class Game
         $rock->addWeakerList([$scissors]);
         $paper->addWeakerList([$rock]);
         $scissors->addWeakerList([$paper]);
+
+        /**
+         * @var Element $element
+         */
+        foreach ($this->elements as $element) {
+            $len = strlen($element->getName());
+            if ($len > $this->elementPadding) {
+                $this->elementPadding = $len;
+            }
+        }
+    }
+
+    public function getElements(): array
+    {
+        return $this->elements;
+    }
+
+    public function getElementPadding(): int
+    {
+        return $this->elementPadding;
     }
 
     public function run(): void
@@ -218,68 +239,137 @@ class Game
     }
 }
 
+class GameSet
+{
+    private Player $player1;
+    private Player $player2;
+    private Player $winner;
+    private Player $looser;
+    private PlayerRecord $playerRecord1;
+    private PlayerRecord $playerRecord2;
+    private PlayerRecord $winnerRecord;
+    private PlayerRecord $looserRecord;
+
+    public function __construct(Player $player1, Player $player2)
+    {
+        $this->player1 = $player1;
+        $this->player2 = $player2;
+        $this->playerRecord1 = new PlayerRecord($player1);
+        $this->playerRecord2 = new PlayerRecord($player2);
+    }
+
+    public function getWinnerRecord(): PlayerRecord
+    {
+        return $this->winnerRecord;
+    }
+
+    public function getLooserRecord(): PlayerRecord
+    {
+        return $this->looserRecord;
+    }
+
+    public function getWinner(): Player
+    {
+        return $this->winner;
+    }
+
+    public function getLooser(): Player
+    {
+        return $this->looser;
+    }
+
+    public function play(int $minWins): Player
+    {
+        $game = new Game();
+        $elements = $game->getElements();
+
+        $player1 = $this->player1;
+        $player2 = $this->player2;
+        $playerScore1 = 0;
+        $playerScore2 = 0;
+        $winner = null;
+
+        while (($playerScore1 < $minWins) && ($playerScore2 < $minWins)) {
+            if (!$player1->isCPU()) {
+                $player1->setSelection($elements[$game->chooseElement($player1)]);
+            } else {
+                $player1->setSelection($elements[array_rand($elements)]);
+            }
+            $this->playerRecord1->addElement($player1->getSelection());
+
+            if (!$player2->isCPU()) {
+                $player2->setSelection($elements[$game->chooseElement($player2)]);
+            } else {
+                $player2->setSelection($elements[array_rand($elements)]);
+            }
+            $this->playerRecord2->addElement($player2->getSelection());
+
+            $winner = $game->fight1on1($player1, $player2);
+
+            if ($winner === $player1) {
+                $playerScore1++;
+            }
+            if ($winner === $player2) {
+                $playerScore2++;
+            }
+            $this->playerRecord1->addScore($playerScore1);
+            $this->playerRecord2->addScore($playerScore2);
+
+            if ($winner !== null) {
+                echo "{$winner->getName()} won\n";
+            } else echo "It's tie!\n";
+        }
+        if ($playerScore1 > $playerScore2) {
+            $this->winner = $player1;
+            $this->winnerRecord = $this->playerRecord1;
+            $this->looser = $player2;
+            $this->looserRecord = $this->playerRecord2;
+        } else {
+            $this->winner = $player2;
+            $this->winnerRecord = $this->playerRecord2;
+            $this->looser = $player1;
+            $this->looserRecord = $this->playerRecord1;
+        }
+
+        return $winner;
+    }
+}
+
 /*
 $game = new Game();
 $game->testMultiFight();
 */
 
-class Tournament extends Game
+class Tournament //extends Game
 {
     /**
      * @var Player[] $players
      */
     private array $players;
+    private int $namePadding = 0;
 
     /**
      * @var MatchScore[]
      */
-    private array $allMatches = [];
+//    private array $allMatches = [];
+    /**
+     * @var GameSet[]
+     */
+    private array $allGames = [];
 
     public function __construct(int $numberOfPlayers)
     {
-        parent::__construct();
-
-        for ($c = 1; $c <= $numberOfPlayers-1; $c++) {
+        for ($c = 1; $c <= $numberOfPlayers - 1; $c++) {
             $this->players[] = new Player("CPU core-{$c}", true);
         }
         $this->players[] = new Player(readline("Enter your name: "));
-    }
 
-    public function match(Player $player1, Player $player2, int $minWins): Player
-    {
-        $player1->setWins(0);
-        $player2->setWins(0);
-
-        echo "~-=={$player1->getName()} VS {$player2->getName()}==-~\n";
-
-//        $c = 1;
-//        while (($c <= $rounds) || ($player1->getWins() === $player2->getWins())) {
-        while ((($player1->getWins() < $minWins) && ($player2->getWins() < $minWins))
-            || ($player1->getWins() === $player2->getWins())) {
-            if (!$player1->isCPU()) {
-                $player1->setSelection($this->elements[$this->chooseElement($player1)]);
-            } else {
-                $player1->setSelection($this->elements[array_rand($this->elements)]);
+        foreach ($this->players as $player) {
+            $len = strlen($player->getName());
+            if ($len > $this->namePadding) {
+                $this->namePadding = $len;
             }
-
-            if (!$player2->isCPU()) {
-                $player2->setSelection($this->elements[$this->chooseElement($player2)]);
-            } else {
-                $player2->setSelection($this->elements[array_rand($this->elements)]);
-            }
-
-            echo "{$player1->getName()} - {$player1->getSelection()->getName()}\n";
-            echo "{$player2->getName()} - {$player2->getSelection()->getName()}\n";
-
-            $winner = $this->fight1on1($player1, $player2);
-            if ($winner !== null) {
-                $winner->setWins($winner->getWins() + 1);
-                $winner->setTotalWins($winner->getTotalWins() + 1);
-                echo "{$winner->getName()} won\n";
-            } else echo "It's tie!\n";
-//            $c++;
         }
-        return $player1->getWins() > $player2->getWins() ? $player1 : $player2;
     }
 
     public function run(): void
@@ -290,32 +380,115 @@ class Tournament extends Game
             $nextQueue = [];
             while (count($playersQueue) > 1) {
                 $player1 = array_pop($playersQueue);
-                $player2 =  array_pop($playersQueue);
-                $winner = $this->match($player1, $player2, 2);
+                $player2 = array_pop($playersQueue);
 
-                echo "And finally {$winner->getName()} won\n";
+                $game = new GameSet($player1, $player2);
+                $this->allGames[] = $game;
+
+                $winner = $game->play(2);
 
                 $nextQueue[] = $winner;
-                $looser = $winner === $player1 ? $player2 : $player1;
-
-                $this->allMatches[] = new MatchScore(
-                    $winner, $winner->getWins(),
-                    $looser, $looser->getWins()
-                );
             }
+
             if (current($playersQueue)) {
                 $nextQueue[] = current($playersQueue);
             }
             $playersQueue = $nextQueue;
         }
+        $this->displayScores($winner);
+    }
 
+    public function displayScores(Player $win): void
+    {
+        $elementPadding = (new Game)->getElementPadding();
         echo "=============MATCHES============\n";
-        foreach ($this->allMatches as $match) {
-            echo "{$match->getWinner()->getName()}: {$match->getScore1()}\n";
-            echo "{$match->getLooser()->getName()}: {$match->getScore2()}\n";
-            echo PHP_EOL;
+        /**
+         * @var GameSet $game
+         * @var PlayerRecord $winner
+         * @var PlayerRecord $looser
+         */
+        foreach ($this->allGames as $game) {
+            $winner = $game->getWinnerRecord();
+            $looser = $game->getLooserRecord();
+            echo '~--===' . $winner->getPlayer()->getName()
+                . ' VS ' . $looser->getPlayer()->getName() . "===--~\n";
+
+            echo str_pad($winner->getPlayer()->getName(), $this->namePadding) . ' :';
+
+            $winnerElementTable = $winner->getElementsTable();
+            $winnerScoreTable = $winner->getScoreTable();
+            for ($i = 0; $i < count($winnerElementTable); $i++) {
+                echo ' ';
+                echo str_pad($winnerElementTable[$i]->getName(), $elementPadding, ' ', STR_PAD_LEFT);
+                echo ' s: ';
+                echo $winnerScoreTable[$i];
+            }
+            echo " - WIN\n";
+
+            echo str_pad($looser->getPlayer()->getName(), $this->namePadding) . ' :';
+
+            $looserElementTable = $looser->getElementsTable();
+            $looserScoreTable = $looser->getScoreTable();
+            for ($i = 0; $i < count($looserElementTable); $i++) {
+                echo ' ';
+                echo str_pad($looserElementTable[$i]->getName(), $elementPadding, ' ', STR_PAD_LEFT);
+                echo ' s: ';
+                echo $looserScoreTable[$i];
+            }
+            echo " - LOSE\n";
+            echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
         }
-        echo "And the winner is: {$winner->getName()} with totals wins: {$winner->getTotalWins()}\n";
+        echo PHP_EOL;
+        echo "And the winner is: {$win->getName()}\n";
+    }
+}
+
+class PlayerRecord
+{
+    private Player $player;
+    private int $wins = 0;
+    private array $scoreTable = [];
+    private array $elementsTable = [];
+
+    public function __construct(Player $player)
+    {
+
+        $this->player = $player;
+    }
+
+    public function getPlayer(): Player
+    {
+        return $this->player;
+    }
+
+    public function setPlayer(Player $player): void
+    {
+        $this->player = $player;
+    }
+
+    public function getWins(): int
+    {
+        return $this->wins;
+    }
+
+    public function getScoreTable(): array
+    {
+        return $this->scoreTable;
+    }
+
+    public function addScore(int $score): void
+    {
+        $this->scoreTable[] = $score;
+    }
+
+    public function getElementsTable(): array
+    {
+        return $this->elementsTable;
+    }
+
+    public function addElement(Element $element): void
+    {
+        $this->elementsTable[] = $element;
     }
 }
 
